@@ -7,6 +7,11 @@ artifacts/mockup-sandbox
 node_modules
 **/node_modules
 
+# Never upload local environment files (they hold local-only secrets)
+.env
+.env.*
+!.env.example
+
 # Exclude Docker files
 Dockerfile*
 compose.yaml
