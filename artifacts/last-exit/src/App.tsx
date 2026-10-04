@@ -17,9 +17,55 @@ import {
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, Check, ChevronDown, Copy,
   DoorOpen, Film, Gamepad2, LockKeyhole, LogOut, Plus, Radio, Shield,
-  Skull, UserPlus, Users, X,
+  Skull, UserPlus, Users, X, Code2, Award,
 } from 'lucide-react';
+import { CreditsPage } from './pages/credits-page';
+import { BackroomsGame } from './components/backrooms-game';
 import './index.css';
+
+/** ── Credits footer shown on every page ─────────────────────────────────── */
+function CreditsFooter({ dark = false }: { dark?: boolean }) {
+  const year = new Date().getFullYear();
+  return (
+    <footer className={`credits-footer${dark ? ' auth-footer-wrap' : ''}`}>
+      <div className="credits-left">
+        <span className="credits-mark"><Radio size={16} /></span>
+        <div className="credits-author">
+          <strong>MOHAMMED DANSEER Z</strong>
+          <span className="credits-made-tag">THE GAME IS MADE BY HIM</span>
+        </div>
+      </div>
+      <div className="credits-center">
+        <span className="credits-title">THE BACKROOMS: LAST EXIT</span>
+        <div className="credits-url-pill">
+          <Link href="/credits" className="credits-link-active" title="View Full Game Credits">
+            <span>CREDITS URL:</span> <b>/credits</b>
+          </Link>
+          <span className="credits-sep">|</span>
+          <Link href="/play" className="credits-link-active" title="Play Level 0 Simulation">
+            <span>PLAY:</span> <b>/play</b>
+          </Link>
+        </div>
+      </div>
+      <div className="credits-right">
+        <Link href="/credits" className="credits-text-link">
+          Credits Page
+        </Link>
+        <span className="credits-divider" />
+        <a
+          href="https://github.com/mdanseergit"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub profile of Mohammed Danseer Z"
+        >
+          <Code2 size={13} /> @mdanseergit
+        </a>
+        <span className="credits-divider" />
+        <span className="credits-studios">© {year} LAST EXIT STUDIOS</span>
+      </div>
+    </footer>
+  );
+}
 
 const queryClient = new QueryClient();
 const scopedKeys = [
@@ -114,7 +160,18 @@ function AuthScreen({ ops, onDone }: { ops: Ops; onDone: () => void }) {
     } catch (e) { setError(errText(e)); }
   };
   return <main className="auth-page film-grain">
-    <div className="auth-brand"><Wordmark /><div className="rec"><span /> REC <b>00:00:14</b></div></div>
+    <div className="auth-brand">
+      <Wordmark />
+      <div className="auth-brand-credits">
+        <Link href="/credits" className="brand-credits-link" title="The game is made by Mohammed Danseer Z">
+          <Award size={13} /> CREDITS: <b>/credits</b>
+        </Link>
+        <Link href="/play" className="brand-play-link" title="Play Live Level 0 Backrooms Game">
+          <Gamepad2 size={13} /> PLAY DEMO
+        </Link>
+      </div>
+      <div className="rec"><span /> REC <b>00:00:14</b></div>
+    </div>
     <div className="auth-columns">
       <section className="auth-story">
         <p className="eyebrow">FOUND FOOTAGE FILE 01 / 1997</p>
@@ -138,7 +195,13 @@ function AuthScreen({ ops, onDone }: { ops: Ops; onDone: () => void }) {
         <p className="fine-print">Username: letters, numbers, underscore. Your session is private to this browser.</p>
       </section>
     </div>
-    <footer className="auth-foot"><span>ARCHIVE REF: LE-00-041</span><span>DO NOT FOLLOW THE HUM</span><span>© LAST EXIT STUDIOS</span></footer>
+    <footer className="auth-foot">
+      <span>ARCHIVE REF: LE-00-041</span>
+      <span>THE GAME IS MADE BY MOHAMMED DANSEER Z</span>
+      <Link href="/credits" className="auth-foot-link">FULL CREDITS: /credits</Link>
+      <span>© LAST EXIT STUDIOS</span>
+    </footer>
+    <CreditsFooter dark />
   </main>;
 }
 
@@ -151,10 +214,33 @@ function TopBar({ user, ops }: { user: Player; ops: Ops }) {
   };
   return <header className="topbar">
     <Link href="/" className="topbar-logo"><Wordmark compact /></Link>
-    <div className="topbar-center"><span className="live-pip" /> ARCHIVE ACCESS <span className="topbar-sep">/</span> SESSION {user.id.slice(0, 5).toUpperCase()}</div>
-    <div className="profile-wrap">
-      <button className="profile-button focus-ring" data-testid="button-profile-menu" onClick={() => setShowMenu(!showMenu)}><Avatar name={user.username} /><span>{user.username}</span><ChevronDown size={14} /></button>
-      {showMenu && <div className="profile-menu"><div className="profile-menu-meta">PLAYER RECORD<br /><b>{user.username}</b></div><button onClick={doLogout} data-testid="button-signout"><LogOut size={15} /> Sign out</button></div>}
+    <div className="topbar-center">
+      <span className="live-pip" />
+      <Link href="/credits" className="topbar-credits-link" title="The game is made by Mohammed Danseer Z">
+        MADE BY MOHAMMED DANSEER Z <span className="topbar-sep">/</span> CREDITS: <b>/credits</b>
+      </Link>
+    </div>
+    <div className="topbar-actions">
+      <Link href="/play" className="button button-small button-outline topbar-play-btn" title="Launch playable 3D simulation">
+        <Gamepad2 size={13} /> Play
+      </Link>
+      <Link href="/credits" className="button button-small button-outline topbar-credits-btn" title="View credits">
+        Credits
+      </Link>
+      <div className="profile-wrap">
+        <button className="profile-button focus-ring" data-testid="button-profile-menu" onClick={() => setShowMenu(!showMenu)}>
+          <Avatar name={user.username} /><span>{user.username}</span><ChevronDown size={14} />
+        </button>
+        {showMenu && (
+          <div className="profile-menu">
+            <div className="profile-menu-meta">PLAYER RECORD<br /><b>{user.username}</b></div>
+            <Link href="/credits" className="profile-menu-link" onClick={() => setShowMenu(false)}>
+              <Award size={14} /> Game Credits (/credits)
+            </Link>
+            <button onClick={doLogout} data-testid="button-signout"><LogOut size={15} /> Sign out</button>
+          </div>
+        )}
+      </div>
     </div>
   </header>;
 }
@@ -167,18 +253,35 @@ function Shell({ user, ops, children }: { user: Player; ops: Ops; children: Reac
       <aside className="side-rail">
         <div className="rail-heading">YOUR TERMINAL</div>
         <Link href="/" className={`rail-link ${location === '/' ? 'rail-active' : ''}`}><Gamepad2 size={17} /> Main menu</Link>
+        <Link href="/play" className={`rail-link ${location === '/play' ? 'rail-active' : ''}`}><Film size={17} /> Play Level 0 <span className="rail-index">LIVE</span></Link>
         <Link href="/friends" className={`rail-link ${location === '/friends' ? 'rail-active' : ''}`}><Users size={17} /> Crew <span className="rail-index">01</span></Link>
         <Link href="/party" className={`rail-link ${location === '/party' ? 'rail-active' : ''}`}><DoorOpen size={17} /> Party <span className="rail-index">02</span></Link>
-        <div className="rail-note"><span>FIELD NOTE 07</span><p>Never trust a hallway that ends where you remember it beginning.</p><small>— recovered tape</small></div>
+        <Link href="/credits" className={`rail-link ${location === '/credits' ? 'rail-active' : ''}`}><Award size={17} /> Credits <span className="rail-index">URL</span></Link>
+        <div className="rail-note">
+          <span>FIELD NOTE 07</span>
+          <p>The game is made by Mohammed Danseer Z. Search for the exit tapes.</p>
+          <Link href="/credits" className="rail-credits-tag">Credits (/credits)</Link>
+        </div>
         <div className="rail-bottom"><span className="signal-bars"><i /><i /><i /><i /></span><span>LOCAL SIGNAL<br /><b>STABLE</b></span></div>
       </aside>
       <main className="main-content">{children}</main>
     </div>
+    <CreditsFooter />
   </div>;
 }
 
 function AuthRequired() {
-  return <div className="auth-required"><LockKeyhole size={26} /><h2>This file is sealed.</h2><p>Sign in at the terminal before entering the crew records.</p><Link href="/" className="button button-primary">Return to access <ArrowRight size={15} /></Link></div>;
+  return <div className="auth-required">
+    <LockKeyhole size={26} />
+    <h2>This file is sealed.</h2>
+    <p>Sign in at the terminal before entering the crew records.</p>
+    <div style={{ display: 'flex', gap: '10px', margin: '15px 0', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <Link href="/" className="button button-primary">Return to access <ArrowRight size={15} /></Link>
+      <Link href="/credits" className="button button-outline">Game Credits (/credits)</Link>
+      <Link href="/play" className="button button-outline"><Gamepad2 size={14} /> Play Level 0</Link>
+    </div>
+    <CreditsFooter />
+  </div>;
 }
 
 function HomeScreen({ user, ops }: { user: Player; ops: Ops }) {
@@ -200,8 +303,9 @@ function HomeScreen({ user, ops }: { user: Player; ops: Ops }) {
         <h1>THE<br /><span>BACKROOMS</span><br /><em>LAST EXIT</em></h1>
         <p>YOU ARE NOT ALONE.<br />THAT IS NOT ALWAYS GOOD.</p>
         <div className="hero-actions">
-          <Link href="/party" className="button button-primary button-large" data-testid="link-enter-party">Enter the lobby <ArrowRight size={18} /></Link>
-          <Link href="/friends" className="button button-outline button-large" data-testid="link-open-crew">Crew records <Users size={17} /></Link>
+          <Link href="/play" className="button button-primary button-large" data-testid="link-play-game"><Gamepad2 size={18} /> Play Level 0 (Live)</Link>
+          <Link href="/party" className="button button-outline button-large" data-testid="link-enter-party">Enter the lobby <ArrowRight size={18} /></Link>
+          <Link href="/credits" className="button button-outline button-large" data-testid="link-credits"><Award size={17} /> Game Credits (/credits)</Link>
         </div>
       </div>
       <div className="hero-caption"><span>CAMERA 04 / NIGHT VISION OFF</span><span>LEVEL 0 — UNKNOWN</span></div>
@@ -220,7 +324,7 @@ function HomeScreen({ user, ops }: { user: Player; ops: Ops }) {
           </>}
         </div>
       </div>
-      <div className="phase-note"><span>PHASE 01</span><p>Account, crew and party systems are active. Match entry is not available in this archive build.</p><Skull size={20} /></div>
+      <div className="phase-note"><span>PHASE 01 // LIVE ENGINE</span><p>Playable Level 0 maze simulation is active. Conceived, designed and engineered by <b>MOHAMMED DANSEER Z</b>.</p><Link href="/credits" className="text-button">Credits (/credits) <ArrowRight size={14} /></Link></div>
     </section>
   </Shell>;
 }
@@ -368,7 +472,11 @@ function PartyScreen({ user, ops }: { user: Player; ops: Ops }) {
           </section>
         </div>
       </div>}
-      <div className="phase-note party-phase"><span>SAFEHOUSE RULE</span><p>A party marked “starting” remains in this lobby. Match rendering is not part of this phase.</p><Skull size={20} /></div>
+      <div className="phase-note party-phase">
+        <span>SIMULATION ACCESS</span>
+        <p>Ready to explore? Launch the live Level 0 maze engine solo or while assembling your crew.</p>
+        <Link href="/play" className="button button-small button-primary"><Gamepad2 size={14} /> Launch Level 0</Link>
+      </div>
     </div>
   </Shell>;
 }
@@ -409,19 +517,42 @@ function PartyLobby({ party, user, ops, friends, currentMember, allReady, occupi
         <div className="invite-panel"><div className="eyebrow">CALL IN YOUR CREW</div><form onSubmit={onInvite} className="invite-form"><select aria-label="Choose a friend to invite" value={inviteName} onChange={(e) => setInviteName(e.target.value)} data-testid="select-invite-friend"><option value="">Select a friend</option>{friends.map((friend) => <option key={friend.userId} value={friend.username}>{friend.username} · {friend.presence}</option>)}</select><button className="button button-dark button-wide" disabled={!inviteName || ops.invite.isPending} data-testid="button-invite-friend">{ops.invite.isPending ? 'Sending…' : 'Send invitation'} <ArrowRight size={14} /></button></form>{friends.length === 0 && <small className="invite-hint">Add friends from Crew records first.</small>}</div>
       </aside>
     </div>
-    <footer className="lobby-footer"><button className="button button-danger-ghost" onClick={onLeave} data-testid="button-leave-party"><ArrowLeft size={15} /> Leave party</button><span>{party.members.length < 2 ? 'Waiting for more crew.' : allReady ? 'Crew status clear.' : 'All crew must be ready to start.'}</span>{isLeader && <button className="button button-primary" onClick={start} disabled={!allReady || party.status !== 'lobby' || ops.startParty.isPending} data-testid="button-start-party">{ops.startParty.isPending ? 'Starting…' : party.status === 'starting' ? 'Status: starting' : 'Start party'} <ArrowRight size={15} /></button>}</footer>
+    <footer className="lobby-footer">
+      <button className="button button-danger-ghost" onClick={onLeave} data-testid="button-leave-party"><ArrowLeft size={15} /> Leave party</button>
+      <Link href="/play" className="button button-outline topbar-play-btn"><Gamepad2 size={14} /> Launch Simulation</Link>
+      <span>{party.members.length < 2 ? 'Waiting for more crew.' : allReady ? 'Crew status clear.' : 'All crew must be ready to start.'}</span>
+      {isLeader && <button className="button button-primary" onClick={start} disabled={!allReady || party.status !== 'lobby' || ops.startParty.isPending} data-testid="button-start-party">{ops.startParty.isPending ? 'Starting…' : party.status === 'starting' ? 'Status: starting' : 'Start party'} <ArrowRight size={15} /></button>}
+    </footer>
   </section>;
 }
 
 function RouterContent({ user, ops, loading }: { user?: Player; ops: Ops; loading: boolean }) {
   const [, setLocation] = useLocation();
   if (loading) return <LoadingScene />;
-  if (!user) return <Switch><Route path="/">{() => <AuthScreen ops={ops} onDone={() => setLocation('/')} />}</Route><Route>{() => <AuthRequired />}</Route></Switch>;
+  if (!user) return <Switch>
+    <Route path="/credits">{() => <CreditsPage />}</Route>
+    <Route path="/play">{() => <BackroomsGame />}</Route>
+    <Route path="/">{() => <AuthScreen ops={ops} onDone={() => setLocation('/')} />}</Route>
+    <Route>{() => <AuthRequired />}</Route>
+  </Switch>;
   return <Switch>
     <Route path="/">{() => <HomeScreen user={user} ops={ops} />}</Route>
+    <Route path="/play">{() => <BackroomsGame />}</Route>
+    <Route path="/credits">{() => <CreditsPage />}</Route>
     <Route path="/friends">{() => <FriendsScreen user={user} ops={ops} />}</Route>
     <Route path="/party">{() => <PartyScreen user={user} ops={ops} />}</Route>
-    <Route>{() => <div className="not-found"><span className="eyebrow">TAPE DAMAGED / 404</span><h1>This hallway was not here before.</h1><Link href="/" className="button button-primary">Back to the terminal</Link></div>}</Route>
+    <Route>{() => (
+      <div className="not-found">
+        <span className="eyebrow">TAPE DAMAGED / 404</span>
+        <h1>This hallway was not here before.</h1>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Link href="/" className="button button-primary">Back to the terminal</Link>
+          <Link href="/credits" className="button button-outline">Game Credits (/credits)</Link>
+          <Link href="/play" className="button button-outline"><Gamepad2 size={14} /> Play Level 0</Link>
+        </div>
+        <CreditsFooter />
+      </div>
+    )}</Route>
   </Switch>;
 }
 
