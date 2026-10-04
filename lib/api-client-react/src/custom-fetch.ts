@@ -1,5 +1,10 @@
 export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
+  /**
+   * Abort the request after this many milliseconds. Defaults to
+   * {@link DEFAULT_TIMEOUT_MS}; pass `0` to disable the timeout entirely.
+   */
+  timeout?: number;
 };
 
 export type ErrorType<T = unknown> = ApiError<T>;
@@ -10,6 +15,77 @@ export type AuthTokenGetter = () => Promise<string | null> | string | null;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
+
+/**
+ * Upper bound for a single request. Without it a server that accepts the
+ * connection but never answers (a cold start on a free tier, a dropped
+ * packet) leaves the caller pending forever and the UI stuck on a spinner.
+ */
+export const DEFAULT_TIMEOUT_MS = 20_000;
+
+export class RequestTimeoutError extends Error {
+  readonly name = "RequestTimeoutError";
+  readonly timeoutMs: number;
+  readonly method: string;
+  readonly url: string;
+
+  constructor(timeoutMs: number, requestInfo: { method: string; url: string }) {
+    super(
+      `${requestInfo.method} ${requestInfo.url} timed out after ${timeoutMs}ms`,
+    );
+    Object.setPrototypeOf(this, new.target.prototype);
+    this.timeoutMs = timeoutMs;
+    this.method = requestInfo.method;
+    this.url = requestInfo.url;
+  }
+}
+
+type RequestSignalHandle = {
+  signal: AbortSignal | undefined;
+  didTimeout: () => boolean;
+  cleanup: () => void;
+};
+
+/**
+ * Combine the caller's abort signal with a timer. `signal` stays `undefined`
+ * when no timeout is wanted, so `fetch` keeps its default behaviour.
+ */
+function createRequestSignal(
+  timeoutMs: number,
+  external: AbortSignal | null | undefined,
+): RequestSignalHandle {
+  const passthrough: RequestSignalHandle = {
+    signal: external ?? undefined,
+    didTimeout: () => false,
+    cleanup: () => {},
+  };
+
+  if (!(timeoutMs > 0)) return passthrough;
+  if (typeof AbortController === "undefined") return passthrough;
+
+  const controller = new AbortController();
+  const forwardAbort = () => controller.abort(external?.reason);
+
+  if (external) {
+    if (external.aborted) controller.abort(external.reason);
+    else external.addEventListener("abort", forwardAbort, { once: true });
+  }
+
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
+  return {
+    signal: controller.signal,
+    didTimeout: () => timedOut,
+    cleanup: () => {
+      clearTimeout(timer);
+      external?.removeEventListener("abort", forwardAbort);
+    },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Module-level configuration
@@ -327,7 +403,12 @@ export async function customFetch<T = unknown>(
   options: CustomFetchOptions = {},
 ): Promise<T> {
   input = applyBaseUrl(input);
-  const { responseType = "auto", headers: headersInit, ...init } = options;
+  const {
+    responseType = "auto",
+    headers: headersInit,
+    timeout = DEFAULT_TIMEOUT_MS,
+    ...init
+  } = options;
 
   const method = resolveMethod(input, init.method);
 
@@ -360,17 +441,30 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, {
-    ...init,
-    method,
-    headers,
-    credentials: init.credentials ?? "include",
-  });
+  const { signal, didTimeout, cleanup } = createRequestSignal(timeout, init.signal);
 
-  if (!response.ok) {
-    const errorData = await parseErrorBody(response, method);
-    throw new ApiError(response, errorData, requestInfo);
+  try {
+    let response: Response;
+    try {
+      response = await fetch(input, {
+        ...init,
+        method,
+        headers,
+        credentials: init.credentials ?? "include",
+        signal,
+      });
+    } catch (cause) {
+      if (didTimeout()) throw new RequestTimeoutError(timeout, requestInfo);
+      throw cause;
+    }
+
+    if (!response.ok) {
+      const errorData = await parseErrorBody(response, method);
+      throw new ApiError(response, errorData, requestInfo);
+    }
+
+    return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  } finally {
+    cleanup();
   }
-
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
 }

@@ -1,11 +1,11 @@
 {
   "buildCommand": "pnpm --filter @workspace/last-exit run build",
   "outputDirectory": "artifacts/last-exit/dist/public",
-  "installCommand": "npm install -g pnpm && pnpm install --ignore-scripts",
+  "installCommand": "npm install -g pnpm && pnpm install --frozen-lockfile --ignore-scripts",
   "framework": null,
   "rewrites": [
     {
-      "source": "/((?!assets|favicon|robots|sitemap|manifest).*)",
+      "source": "/((?!assets|favicon|robots|sitemap|manifest|api).*)",
       "destination": "/index.html"
     }
   ],
@@ -20,6 +20,15 @@
       ]
     },
     {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {
@@ -29,6 +38,10 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }

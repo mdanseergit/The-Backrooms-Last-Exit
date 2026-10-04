@@ -527,8 +527,12 @@ function PartyLobby({ party, user, ops, friends, currentMember, allReady, occupi
 }
 
 function RouterContent({ user, ops, loading }: { user?: Player; ops: Ops; loading: boolean }) {
-  const [, setLocation] = useLocation();
-  if (loading) return <LoadingScene />;
+  const [location, setLocation] = useLocation();
+  /* The game and the credits are standalone: never make them wait on the
+     session query, otherwise an unreachable API server leaves the player
+     staring at the loading scene instead of the level. */
+  const isStandalone = location === '/play' || location === '/credits';
+  if (loading && !isStandalone) return <LoadingScene />;
   if (!user) return <Switch>
     <Route path="/credits">{() => <CreditsPage />}</Route>
     <Route path="/play">{() => <BackroomsGame />}</Route>
