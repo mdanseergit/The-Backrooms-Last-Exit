@@ -1,0 +1,12 @@
+# Exclude server-side code from Vercel (frontend-only deployment)
+artifacts/api-server
+artifacts/mockup-sandbox
+
+# Exclude heavy non-needed dirs
+.git
+node_modules
+**/node_modules
+
+# Exclude Docker files
+Dockerfile*
+compose.yaml

@@ -1,0 +1,36 @@
+{
+  "buildCommand": "pnpm --filter @workspace/last-exit run build",
+  "outputDirectory": "artifacts/last-exit/dist/public",
+  "installCommand": "npm install -g pnpm && pnpm install --ignore-scripts",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!assets|favicon|robots|sitemap|manifest).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ]
+}

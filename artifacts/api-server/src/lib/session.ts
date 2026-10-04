@@ -35,10 +35,15 @@ export async function readSessionToken(
   }
 }
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const sessionCookieOptions = {
   httpOnly: true,
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  // Cross-origin deployments (Vercel frontend + Render API) need SameSite=none
+  // so the browser sends cookies with cross-origin requests.
+  // SameSite=none requires Secure=true (HTTPS only).
+  sameSite: isProduction ? ("none" as const) : ("lax" as const),
+  secure: isProduction,
   path: "/",
   maxAge: SESSION_TTL_SECONDS * 1000,
 };
