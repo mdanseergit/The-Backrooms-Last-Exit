@@ -4,15 +4,11 @@
   "license": "MIT",
   "scripts": {
     "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
-    "preinstall": "npx --yes only-allow pnpm",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
-  "dependencies": {
-    "@replit/connectors-sdk": "^0.4.3"
-  },
   "devDependencies": {
     "@esbuild/win32-x64": "^0.28.2",
     "@rollup/rollup-win32-x64-msvc": "^4.64.0",
