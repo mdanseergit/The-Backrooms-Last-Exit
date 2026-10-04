@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "The Backrooms: Last Exit"
+description = "A cooperative survival-horror browser game. This first phase provides player accounts, friends, parties, and a private match lobby as the foundation for multiplayer play."
+version = "1.0.0"
+id = "artifacts/last-exit"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26180
+
+[services.development]
+run = "pnpm --filter @workspace/last-exit run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/last-exit", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/last-exit/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26180"
+BASE_PATH = "/"

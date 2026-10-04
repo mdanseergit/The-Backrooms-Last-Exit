@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: accounts
+    description: Account and session operations
+  - name: friends
+    description: Friends and blocked players
+  - name: parties
+    description: Party and lobby operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,411 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountCredentials"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+  /auth/guest:
+    post:
+      operationId: createGuest
+      tags: [accounts]
+      summary: Create a temporary Wanderer account
+      responses:
+        "201":
+          description: Guest account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountCredentials"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [accounts]
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [accounts]
+      responses:
+        "200":
+          description: Current player
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+  /friends:
+    get:
+      operationId: getFriends
+      tags: [friends]
+      responses:
+        "200":
+          description: Friends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Friend"
+  /friends/requests:
+    get:
+      operationId: getFriendRequests
+      tags: [friends]
+      responses:
+        "200":
+          description: Incoming requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FriendRequest"
+    post:
+      operationId: sendFriendRequest
+      tags: [friends]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsernameInput"
+      responses:
+        "201":
+          description: Request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendRequest"
+  /friends/requests/{requestId}/accept:
+    post:
+      operationId: acceptFriendRequest
+      tags: [friends]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /friends/requests/{requestId}/decline:
+    post:
+      operationId: declineFriendRequest
+      tags: [friends]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Request declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /friends/{friendId}:
+    delete:
+      operationId: removeFriend
+      tags: [friends]
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Friend removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /blocks:
+    get:
+      operationId: getBlockedPlayers
+      tags: [friends]
+      responses:
+        "200":
+          description: Blocked players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Friend"
+    post:
+      operationId: blockPlayer
+      tags: [friends]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsernameInput"
+      responses:
+        "201":
+          description: Player blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /blocks/{playerId}:
+    delete:
+      operationId: unblockPlayer
+      tags: [friends]
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Player unblocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /parties/me:
+    get:
+      operationId: getCurrentParty
+      tags: [parties]
+      responses:
+        "200":
+          description: Current party, if any
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties:
+    post:
+      operationId: createParty
+      tags: [parties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartyInput"
+      responses:
+        "201":
+          description: Party created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties/join:
+    post:
+      operationId: joinParty
+      tags: [parties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomCodeInput"
+      responses:
+        "200":
+          description: Joined party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties/invitations:
+    get:
+      operationId: getPartyInvitations
+      tags: [parties]
+      responses:
+        "200":
+          description: Incoming invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartyInvitation"
+    post:
+      operationId: inviteToParty
+      tags: [parties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsernameInput"
+      responses:
+        "201":
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyInvitation"
+  /parties/invitations/{invitationId}/accept:
+    post:
+      operationId: acceptPartyInvitation
+      tags: [parties]
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Joined party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties/invitations/{invitationId}/decline:
+    post:
+      operationId: declinePartyInvitation
+      tags: [parties]
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Invitation declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /parties/leave:
+    post:
+      operationId: leaveParty
+      tags: [parties]
+      responses:
+        "200":
+          description: Left party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+  /parties/me/ready:
+    patch:
+      operationId: setPartyReady
+      tags: [parties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReadyInput"
+      responses:
+        "200":
+          description: Updated party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties/me/team:
+    patch:
+      operationId: setPartyTeam
+      tags: [parties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInput"
+      responses:
+        "200":
+          description: Updated party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties/me/mode:
+    patch:
+      operationId: setPartyMode
+      tags: [parties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModeInput"
+      responses:
+        "200":
+          description: Updated party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /parties/start:
+    post:
+      operationId: startParty
+      tags: [parties]
+      responses:
+        "200":
+          description: Match started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartyResult"
+  /lobby/summary:
+    get:
+      operationId: getLobbySummary
+      tags: [parties]
+      responses:
+        "200":
+          description: Main menu summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LobbySummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +444,121 @@ components:
           type: string
       required:
         - status
+    AccountCredentials:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 16, pattern: "^[A-Za-z0-9_]+$" }
+        password: { type: string, minLength: 10, maxLength: 128 }
+    Player:
+      type: object
+      required: [id, username, presence, characterSkin, isGuest]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        presence: { type: string, enum: [online, offline, in-game] }
+        characterSkin: { type: string }
+        isGuest: { type: boolean }
+    AuthResult:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: "#/components/schemas/Player" }
+    ActionResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+    UsernameInput:
+      type: object
+      required: [username]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 16 }
+    Friend:
+      type: object
+      required: [userId, username, presence]
+      properties:
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        presence: { type: string, enum: [online, offline, in-game] }
+    FriendRequest:
+      type: object
+      required: [id, userId, username, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        createdAt: { type: string, format: date-time }
+    PartyInput:
+      type: object
+      required: [mode, isPrivate]
+      properties:
+        mode: { type: string, enum: [coop-squad, team-race] }
+        isPrivate: { type: boolean }
+    RoomCodeInput:
+      type: object
+      required: [roomCode]
+      properties:
+        roomCode: { type: string, minLength: 6, maxLength: 6, pattern: "^[A-Z0-9]{6}$" }
+    PartyMember:
+      type: object
+      required: [userId, username, teamSlot, ready, isLeader, presence]
+      properties:
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        teamSlot: { type: integer, minimum: 1, maximum: 4 }
+        ready: { type: boolean }
+        isLeader: { type: boolean }
+        presence: { type: string, enum: [online, offline, in-game] }
+    Party:
+      type: object
+      required: [id, roomCode, mode, isPrivate, status, members]
+      properties:
+        id: { type: string, format: uuid }
+        roomCode: { type: string }
+        mode: { type: string, enum: [coop-squad, team-race] }
+        isPrivate: { type: boolean }
+        status: { type: string, enum: [lobby, starting, in-game] }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/PartyMember" }
+    PartyResult:
+      type: object
+      required: [party]
+      properties:
+        party:
+          oneOf:
+            - $ref: "#/components/schemas/Party"
+            - type: "null"
+    PartyInvitation:
+      type: object
+      required: [id, partyId, roomCode, fromUsername, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        partyId: { type: string, format: uuid }
+        roomCode: { type: string }
+        fromUsername: { type: string }
+        createdAt: { type: string, format: date-time }
+    ReadyInput:
+      type: object
+      required: [ready]
+      properties:
+        ready: { type: boolean }
+    TeamInput:
+      type: object
+      required: [teamSlot]
+      properties:
+        teamSlot: { type: integer, minimum: 1, maximum: 4 }
+    ModeInput:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [coop-squad, team-race] }
+    LobbySummary:
+      type: object
+      required: [friendsOnline, incomingFriendRequests, partyInvitations]
+      properties:
+        friendsOnline: { type: integer }
+        incomingFriendRequests: { type: integer }
+        partyInvitations: { type: integer }
 

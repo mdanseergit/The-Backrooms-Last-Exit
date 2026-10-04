@@ -1,0 +1,281 @@
+# MASTER PROMPT: "THE BACKROOMS: LAST EXIT" — MULTIPLAYER WEB HORROR-CO-OP GAME
+
+## 0. YOUR ROLES
+
+Act simultaneously as:
+
+1. Senior Game Systems Architect (authoritative multiplayer, scalable backend)
+
+2. AAA Real-Time Graphics Engineer (WebGPU/WebGL2, optimized PBR, lighting, post-processing)
+
+3. Horror Narrative Designer (Backrooms lore, environmental storytelling)
+
+4. Gameplay/Puzzle Designer (procedural, co-op focused)
+
+5. Mobile UX Engineer (touch controls, adaptive performance)
+
+6. Prompt-following Senior Full-Stack Developer who ships working, runnable code
+
+Rules: never give pseudo-code when real code is possible. Never skip files. After each phase, output the complete file tree, full code for every file, run instructions, and a test checklist. Ask me before moving to the next phase.
+
+## 1. GAME OVERVIEW
+
+Title: The Backrooms: Last Exit
+
+Genre: Co-op survival horror, procedural levels, online multiplayer, browser-based (no install).
+
+Premise: Players "no-clip" out of reality into the Backrooms. Squads must solve puzzles, collect power cells, and open the Exit Door of each Level while being hunted by four unique entities. Teamwork, voice chat, and reviving downed friends are core.
+
+Players: 1–4 players per team. Up to 4 teams (max 16 players) per server instance.
+
+Modes:
+
+- CO-OP SQUAD: one team, 1–4 players, all vs entities.
+
+- TEAM RACE: up to 4 teams race to exit each Level first. Entities hunt everyone.
+
+- PRIVATE LOBBY: friends only, join via room code or invite.
+
+## 2. TECH STACK (use exactly this unless you justify a change)
+
+Client:
+
+- TypeScript + Vite
+
+- Three.js with WebGPURenderer, automatic fallback to WebGL2
+
+- bitecs (ECS) for entities/components
+
+- Rapier (WASM) for physics and collisions
+
+- Howler.js / WebAudio API with a custom 3D spatial audio layer
+
+- WebRTC (proximity voice chat, via LiveKit or simple-peer)
+
+- Zustand for UI state, plain DOM/CSS for HUD (not React inside the render loop)
+
+- Workers for chunk generation and pathfinding
+
+Server:
+
+- Node.js + TypeScript, Colyseus (authoritative rooms) over WebSockets
+
+- Redis (presence, matchmaking, parties, pub/sub)
+
+- PostgreSQL (accounts, friends, stats, cosmetics)
+
+- JWT auth, argon2 password hashing, rate limiting
+
+- Docker + docker-compose for local dev; deployment notes for Fly.io/Railway/AWS
+
+## 3. ACCOUNTS, USERNAMES, FRIENDS
+
+- Registration/login: unique username (3–16 chars, regex-validated, case-insensitive uniqueness, profanity filter, reserved-name list), password, optional guest mode with a temporary "Wanderer_XXXX" name.
+
+- Friends: send/accept/decline/remove requests by exact username, online/offline/in-game presence, "Join friend" and "Invite to party" buttons, block list.
+
+- Party system: party leader, ready-check, 4-player cap per team, party chat, room codes (6-char).
+
+- Lobby: choose team slot (Team 1–4), pick character skin, loadout check, start match.
+
+- Provide the full SQL schema, REST endpoints, and Colyseus message schemas.
+
+## 4. NETWORKING ARCHITECTURE
+
+- Server-authoritative simulation at 30 Hz tick, client send rate 20 Hz, snapshot interpolation (100 ms buffer), client-side prediction + server reconciliation for the local player.
+
+- Interest management: only replicate entities/chunks within a radius.
+
+- Deterministic seeded world generation: the server sends one seed; every client generates identical geometry locally (saves bandwidth). Server owns puzzle state, entity AI, health, revive timers, inventory.
+
+- Anti-cheat basics: speed validation, input sanity checks, no client-trusted damage/state, rate limiting.
+
+- Reconnect handling (60 s grace), host-migration not needed (dedicated server).
+
+- Proximity voice chat: volume falls off with distance, muffled through walls, push-to-talk or open mic. IMPORTANT gameplay hook: some entities react to voice.
+
+- Provide a diagram of the architecture in ASCII/Mermaid.
+
+## 5. THE BACKROOMS ENVIRONMENT (EXACT VISUAL DIRECTION)
+
+Build the iconic look with AAA fidelity:
+
+LEVEL 0 — "The Lobby" (starting level)
+
+- Endless maze of damp-yellow wallpaper with faint vertical stripes, water stains, peeling seams, subtle mildew.
+
+- Stained, stale-beige carpet with moist noise-based darkening, fibre normal map, slight parallax.
+
+- Drop-ceiling tiles with buzzing fluorescent light panels. Some flicker, some are dead, some strobe. Real emissive + baked/clustered lighting, cool-yellow color temperature (~3800K), light bounce tint on walls.
+
+- Constant 60 Hz electrical hum (procedural audio), faint distant footsteps, occasional far-off door slam. NO music except dynamic dread stings.
+
+- Rooms of inconsistent sizes, 90° corridors, pillar halls, dead-end rooms, "wrong" doorways, no windows, no exits.
+
+- Atmosphere: slight volumetric haze, vignette, film grain, chromatic aberration at low sanity, security-camera/VHS filter toggle (optional "found footage" mode).
+
+LEVEL 1 — "Habitable Zone": concrete warehouse halls, cold blue-grey light, loading bays, stacked pallets, emergency lights, dripping water, puddle reflections (SSR).
+
+LEVEL 2 — "Pipe Dreams": tight industrial tunnels, steam pipes, red warning lights, heat shimmer, valves, grated floors, a rusty hum.
+
+LEVEL 3 — "The Poolrooms": tiled, silent, flooded white rooms, bright caustics, swimmable water, calm but eerie. Entities move differently here.
+
+LEVEL 4 — "Level Fun": a distorted party-room level (balloons, party hats, cheerful colors, "HAPPY BIRTHDAY" banners) that becomes sinister. Great for niche humor and references.
+
+FINAL — "The Exit": a white void with a single door; a short ending cutscene with branching endings based on teamwork (how many revived, how many left behind).
+
+Technical visual requirements:
+
+- PBR materials (albedo/normal/roughness/AO), KTX2 compressed textures, trim sheets, triplanar mapping, procedural variation to prevent tiling.
+
+- Lighting: clustered forward+ lighting or baked light probes + a few dynamic shadow-casting lights (budget 4–6 shadowed lights near the player), contact shadows, SSAO/GTAO, bloom on emissives, volumetric fog, tonemapping (ACES/AgX), temporal AA.
+
+- Procedural level generation: chunk-based (e.g., 16 m x 16 m), BSP + wave-function-collapse style room placement, guaranteed connectivity, loops, secret rooms, landmarks, so the world feels infinite yet navigable. Streaming chunks around players with LOD and occlusion culling. InstancedMesh for repeated props (lights, tiles, pillars).
+
+- Provide a quality settings system (see Section 9).
+
+## 6. THE FOUR ENTITIES (GHOSTS) THAT HUNT AND KILL
+
+Each has a distinct AI behavior tree/state machine (Patrol → Investigate → Chase → Attack → Cooldown), distinct sensing, and counterplay. The server owns all AI.
+
+1. THE HUM WARDEN (sound hunter) — tall, faceless janitor-like silhouette in a stained uniform. Hunts by SOUND: sprinting, voice chat, dropped items, doors. Blind in complete silence. Counter: crouch, whisper, throw noisemakers as decoys.
+
+2. THE GRIN (light predator) — a floating smile in the dark that only moves when the player is NOT looking at it (line-of-sight freeze) and dwells near dead lights. Counter: flashlights, keep eyes on it, repair fuse boxes to restore lighting.
+
+3. THE SEAM CRAWLER (wall/ceiling stalker) — long-limbed creature that travels through wallpaper seams and ceiling tiles, leaving subtle wall ripples and wet sounds. Ambush attacker that targets isolated players. Counter: stay grouped, watch for ripples, use salt/flare tools to seal seams.
+
+4. THE MIMIC (deceiver) — copies a teammate's name tag, footsteps, and voice lines (recorded phrases) to lure players apart. Counter: password/handshake emotes, verify via ping wheel, tag-check scanner.
+
+Death and revive system:
+
+- Entity hit = DOWNED (not instant death) → bleed-out timer (45 s), crawl slowly, can ping teammates.
+
+- A teammate holds interact for 5 s to REVIVE (interruptible; revive revives with 30% health). Limited revive tokens per team per level; Revive Kits can be found/crafted.
+
+- If bleed-out ends, the player is DEAD and becomes a spectating "echo" who can help by pinging and flickering lights, and can be brought back at a rare Revive Altar for a big co-op puzzle reward.
+
+- Entities can drag/carry downed players (a rescue mini-mission).
+
+- Team wipe = level restart with a harder seed or return to checkpoint.
+
+- Sanity meter: low sanity causes hallucinations, false audio, and Mimic gets stronger; teammates in proximity restore sanity.
+
+## 7. PUZZLES (RANDOM, SEEDED, CO-OP)
+
+Implement a puzzle framework: PuzzleTemplate → seed → instance → server-validated state. Each Level picks 3–5 random puzzles to unlock the Exit. Include at least these templates:
+
+1. Fuse Box Circuit — rotate/connect wire tiles; restores light zones (affects The Grin).
+
+2. Keycode Hunt — clues scattered on walls (graffiti, sticky notes, Polaroids); assemble a 4–6 digit code.
+
+3. Two-Player Sync Switches — two far-apart levers must be held at the same time (voice coordination).
+
+4. Pipe Pressure — rotate valves to route steam to a gauge.
+
+5. Tape Recorder Cipher — decode audio messages with a Caesar/morse wheel.
+
+6. Mirror &amp; Light Beam — rotate mirrors to bounce a laser to a sensor.
+
+7. Sequence Memory Room — floor tiles light up in patterns; the team steps in order.
+
+8. Vending Machine Trade — collect coins/tokens to get items (flashlight battery, noisemaker, revive kit).
+
+9. Poolrooms Drain Puzzle — flip valves in the right order to lower the water.
+
+10. Level Fun Party Quest — find the cake, candles, and balloons in a given order.
+
+Each puzzle must have: difficulty scaling by team size, hints in the environment, anti-grief rules, and server-side validation.
+
+## 8. NICHE MARVEL &amp; DC REFERENCES (EASTER EGGS, LEGALLY SAFE)
+
+Use only subtle, parody/homage-style nods (no official logos, character art, or copyrighted names/images). Examples:
+
+- Graffiti: "Snap out of it" with a purple glove doodle, "Not all who wander are Wayne-ish", a bat-shaped water stain, a scratched lightning bolt, "WITH GREAT POWER… comes great electric bill."
+
+- Collectibles: a fake "Vibranium-ish" shiny rock, a "Totally Not an Infinity Gauntlet" oven mitt (cosmetic), a rusty "Not-Mjolnir" hammer too heavy to lift, a utility belt-style inventory unlock called "Gadget Belt."
+
+- Radio/tape lines: "Why so serious?" style dialogue replaced with original parody ("Why so fluorescent?"). Newspaper clippings in Level Fun with funny hero/villain-style headlines using fictional names (e.g., "Local Caped Man Still Missing").
+
+- Achievements: "Avengers Assemble… In the Hallway", "Dark Knight of the Lobby", "I Am Inevitable (Exit Door)".
+
+- Hidden room: "Multiverse Closet" with parody posters of alternate-universe wallpaper.
+
+Provide a data-driven easter egg system (JSON) so I can swap references easily, and add a legal note recommending original parodies over trademarked assets.
+
+## 9. GRAPHICS TIERS &amp; PERFORMANCE (PC + MOBILE)
+
+Auto-detect hardware (GPU tier, memory, WebGPU support, mobile UA) and select a preset; allow manual override.
+
+- ULTRA (high-end PC): WebGPU, native-resolution, ray-marched volumetric fog, GTAO, SSR, high-res shadows, TAA, bloom, motion blur, film grain, 120+ fps goal.
+
+- HIGH: WebGPU/WebGL2, GTAO, TAA, medium shadows, volumetric fog lite.
+
+- MEDIUM: baked lighting, SSAO low, FXAA, fewer dynamic lights.
+
+- LOW (mobile): 0.6–0.75 render scale, no SSR, baked light only, simple fog, single shadow-casting flashlight, 30–60 fps target.
+
+Systems: dynamic resolution scaling (target frame time), texture streaming, chunk LOD, object pooling, draw-call budget (&lt;1500 desktop, &lt;500 mobile), memory budget, loading screen with asset preloading, FPS/ping overlay, and a profiling section describing how to test.
+
+## 10. CONTROLS
+
+PC: WASD, mouse look (pointer lock), Shift sprint, Ctrl crouch, E interact/revive, F flashlight, Q ping wheel, T/V push-to-talk, Tab players list, Esc menu. Gamepad support.
+
+MOBILE (adaptive):
+
+- Left virtual joystick (dynamic origin, floating), right-side touch-look zone, buttons for Interact/Revive, Sprint (toggle/hold), Crouch, Flashlight, Ping, Voice mute.
+
+- Auto-detect orientation, safe-area insets, user-resizable and repositionable HUD (drag to customize), sensitivity sliders, optional gyro aiming, haptic feedback via the Vibration API, prevent browser gestures/zoom/scroll, left-handed mode.
+
+- Same HUD data (health, bleed-out timer, sanity, team status) in a compact layout.
+
+Provide the full touch-input module code.
+
+## 11. UI/UX
+
+Main menu (found-footage styling), login/register, friends panel, party lobby, team selector (1–4), settings, loading tips, in-game HUD (team portraits with downed/dead/alive states, objective tracker, ping markers, battery meter, sanity vignette), spectator UI, end-of-level summary (revives, puzzles solved, deaths, secrets found), accessibility (subtitles, colorblind modes, reduce flicker for photosensitivity, motion-sickness options).
+
+## 12. STORY &amp; LORE (WRITE FULLY)
+
+Write a 2–3 page narrative bible:
+
+- Backstory: a defunct research firm "Async Labs" tried to open a gateway; the Backrooms are an accidental pocket dimension.
+
+- Each Level's lore, found-document text (20+ notes/tapes/emails written in-character), voicemail messages from earlier "wanderers", and the final choice at the Exit (leave, stay to save the downed, or seal the door behind you).
+
+- Hidden story thread: the entities were once staff. The Hum Warden was a janitor, The Grin a security guard, The Seam Crawler a contractor, The Mimic an intern; each can be "put to rest" in a secret questline.
+
+- Multiple endings and a post-credit teaser.
+
+- Tone: liminal dread, dark humor between friends, never gore-heavy.
+
+## 13. AUDIO
+
+Procedural fluorescent hum, reverb per room size, 3D spatialization, occlusion filters, entity audio signatures (each entity has a unique cue and sting), dynamic music layers only when hunted, whispers at low sanity, footstep surface types.
+
+## 14. PROJECT STRUCTURE
+
+Provide a monorepo layout (packages: client, server, shared, tools), shared TypeScript types/schemas, an asset pipeline (glTF + KTX2 + Draco via gltf-transform), and procedural asset fallbacks so the game runs even without external art files. Include ESLint, Prettier, Vitest tests for generators/puzzles, GitHub Actions CI, and an .env.example.
+
+## 15. DELIVERY PLAN (build in this order, stop after each phase)
+
+PHASE 1: Repo setup, Docker, auth, usernames, friends, party/lobby, DB schema.
+
+PHASE 2: Core client — renderer, Level 0 procedural generation, player controller, PC + mobile joystick controls.
+
+PHASE 3: Multiplayer netcode — rooms, prediction, interpolation, proximity voice, team slots.
+
+PHASE 4: Entities, AI, combat/downed/revive/spectator system, sanity.
+
+PHASE 5: Puzzle framework and all puzzle templates, objectives, Exit Door flow.
+
+PHASE 6: Levels 1–4 and Final Exit, lighting/post-processing polish, graphics tiers.
+
+PHASE 7: Story content, easter eggs, achievements, audio, UI polish.
+
+PHASE 8: Testing, optimization, deployment guide, load-testing plan, security review.
+
+For every phase output: file tree → full code → how to run → acceptance tests → known limitations.
+
+## 16. QUALITY BAR
+
+Runs with `docker compose up` + `npm run dev`. No placeholders like "TODO implement". Strict TypeScript. Commented where logic is non-obvious. Must be playable end-to-end by 4 players on desktop and mobile browsers. Begin with PHASE 1 now, after first restating the architecture diagram and the 5 biggest technical risks with mitigations.
